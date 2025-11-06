@@ -1,7 +1,29 @@
-export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      Hello there!
-    </div>
-  );
+import { redirect } from "next/navigation";
+
+import { ensureBackendProfile } from "@/lib/user-profile";
+import { stackServerApp } from "@/stack/server";
+
+const ROLE_DESTINATIONS: Record<string, string> = {
+  admin: "/admin",
+  mentor: "/mentor",
+  student: "/student",
+};
+
+export default async function Home() {
+  const user = await stackServerApp.getUser({ or: "redirect" });
+  const { profile, needsOnboarding } = await ensureBackendProfile(user, { allowGrant: false });
+
+  if (needsOnboarding) {
+    redirect("/onboarding");
+  }
+
+  const role = profile?.role ?? null;
+  if (role) {
+    const destination = ROLE_DESTINATIONS[role];
+    if (destination) {
+      redirect(destination);
+    }
+  }
+
+  redirect("/onboarding");
 }
